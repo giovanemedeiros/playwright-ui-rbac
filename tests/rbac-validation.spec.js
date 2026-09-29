@@ -143,7 +143,13 @@ test.describe('Access Control and Permissions (RBAC) - Serverest', () => {
   });
 
   // ---- [US04] [UI RBAC] Validar redirecionamento para Login ao tentar acessar rotas privadas sem autenticação ----
-  test('Should redirect Unauthenticated (Guest) user to Login page when accessing private routes', async ({ page }) => {
+  test('Should redirect unauthenticated user to Login page when accessing private routes', async ({ page }) => {
+
+    await page.goto('https://front.serverest.dev/home');
+    await expect(page).toHaveURL('https://front.serverest.dev/login');
+
+    await page.goto('https://front.serverest.dev/admin/home');
+    await expect(page).toHaveURL('https://front.serverest.dev/login');
 
   });
 
