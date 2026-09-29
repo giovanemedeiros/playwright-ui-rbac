@@ -93,15 +93,52 @@ test.describe('Access Control and Permissions (RBAC) - Serverest', () => {
 
     // Attempting to access admin home page
     await page.goto('https://front.serverest.dev/admin/home');
-    await expect(page).toHaveURL('https://front.serverest.dev/home');
+    await expect(page).not.toHaveURL('https://front.serverest.dev/admin/home');
 
-    // BUG CONHECIDO: ServeRest não valida o perfil do usuário comum ao acessar rotas admin.
+    // BUG IDENTIFICADO: ServeRest não valida o perfil do usuário comum ao acessar rotas admin.
     // O teste falhará até que a correção de segurança seja aplicada no front-end.
 
   });
 
   // ---- [US03] [UI RBAC] Validar restrição de acesso a tela de cadastro de usuarios para perfil Comum ----
   test('Should block Standard user from accessing Admin user registration route', async ({ page, request }) => {
+
+    // Get incremental number and create user via API
+    const userNumber = getNextUserNumber();
+    const randomUser = `testqap4v${userNumber}`;
+    const randomEmail = `testqap4v${userNumber}@email.com`;
+
+    // Silent user registration via API as Administrator (Background)
+    await request.post('https://serverest.dev/usuarios', {
+      data: {
+        nome: randomUser,
+        email: randomEmail,
+        password: 'testqa26',
+        administrador: 'false'
+      }
+    });
+
+    // Silent login via API (Background)
+    const loginResponse = await request.post('https://serverest.dev/login', {
+      data: {
+        email: randomEmail,
+        password: 'testqa26'
+      }
+    });
+
+    const { authorization } = await loginResponse.json();
+
+    // Inject token into browser's localStorage before loading page
+    await page.addInitScript(({ token }) => {
+      window.localStorage.setItem('serverest/userToken', token);
+    }, authorization); 
+
+    // Attempting to access user registration page
+    await page.goto('https://front.serverest.dev/admin/cadastrarusuarios');
+    await expect(page).not.toHaveURL('https://front.serverest.dev/admin/cadastrarusuarios');
+    
+    //BUG IDENTIFICADO: ServeRest não valida o perfil do usuário comum ao acessar rotas admin.
+    // O teste falhará até que a correção de segurança seja aplicada no front-end.
 
   });
 
